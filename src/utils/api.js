@@ -20,7 +20,7 @@ const apiClient = axios.create({
 	},
 });
 
-export async function fetchModels() {
+async function fetchModels() {
 	try {
 		const response = await apiClient.get('/models');
 		return response.data.models.map(model => model.name);
@@ -30,7 +30,7 @@ export async function fetchModels() {
 	}
 }
 
-export async function fetchChats() {
+async function fetchChats() {
 	try {
 		const response = await apiClient.get('/chats');
 		return response.data.chats;

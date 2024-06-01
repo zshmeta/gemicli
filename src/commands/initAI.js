@@ -14,6 +14,8 @@ const rl = readline.createInterface({
 	output: process.stdout,
 });
 
+const envPath = path.join(__dirname, '../../.env');
+
 // Function to ask a question and return a promise
 function askQuestion(query) {
 	return new Promise(resolve => rl.question(query, resolve));
@@ -75,7 +77,7 @@ async function initAI() {
 			model: answers[2].model,
 			systemPrompt: answers[3].systemPrompt,
 		};
-		fs.writeFileSync('../env.json', JSON.stringify(configs, null, 2));
+		fs.writeFileSync(envPath, JSON.stringify(configs));
 		console.log(chalk.green('gemicli configs initialized successfully!'));
 
 		} catch (error) {
