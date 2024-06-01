@@ -1,35 +1,43 @@
-import apiClient from './apiClient';
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 
-async function fetchModels() {
-    try {
-        const response = await apiClient.get('/v1/models');
-        return response.data.models;
-    } catch (error) {
-        throw new Error('Failed to fetch models');
-    }
+// Load API key from environment file
+const envPath = path.join(__dirname, '../../.env');
+if (fs.existsSync(envPath)) {
+	const envContent = fs.readFileSync(envPath);
+	const envVars = envContent.toString().split('\n');
+	envVars.forEach(varLine => {
+		const [key, value] = varLine.split('=');
+		process.env[key] = value;
+	});
 }
 
-async function fetchChatHistory() {
-    try {
-        const response = await apiClient.get('/chats');
-        return response.data.chats;
-    } catch (error) {
-        throw new Error('Failed to fetch chat history');
-    }
+const apiClient = axios.create({
+	baseURL: 'https://generativelanguage.googleapis.com/v1beta',
+	headers: {
+		'Authorization': `Bearer ${process.env.API_KEY}`,
+	},
+});
+
+export async function fetchModels() {
+	try {
+		const response = await apiClient.get('/models');
+		return response.data.models.map(model => model.name);
+	} catch (error) {
+		console.error('Error fetching models:', error);
+		throw error;
+	}
 }
 
-async function fetchChatById(chatId) {
-    try {
-        const response = await apiClient.get(`/chats/${chatId}`);
-        return response.data.chat;
-    } catch (error) {
-        throw new Error('Failed to fetch chat');
-    }
+export async function fetchChats() {
+	try {
+		const response = await apiClient.get('/chats');
+		return response.data.chats;
+	} catch (error) {
+		console.error('Error fetching previous chats:', error);
+		throw error;
+	}
 }
 
-export {
-    fetchModels,
-    fetchChatHistory,
-    fetchChatById,
-    apiClient
-};
+export { fetchModels, fetchChats }

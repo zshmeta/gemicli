@@ -1,12 +1,5 @@
-import { setChatHistory } from "./setChatHistory.js"
-import { listChatHistory } from "./listChatHistory.js"
-import { initAI } from "./initAI.js"
+import {setChatHistory} from './setChat.js';
+import {listChatHistory} from './listChat.js';
+import {initAI} from './initAI.js';
 
-
-
-export {
-    listChatHistory,
-    setChatHistory,
-    initAI
-}
-
+export {listChatHistory, setChatHistory, initAI};
