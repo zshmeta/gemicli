@@ -1,5 +1,19 @@
-import {setChatHistory} from './setChat.js';
-import {listChatHistory} from './listChat.js';
-import {initAI} from './initAI.js';
+import { initAI } from './initAI';
+import { genAi } from './genAi';
+import { genAiMulti } from './genAiMulti';
+import {
+  listChat,
+  setChat,
+  creatChat,
+  saveChat,
+} from './manageChat';
 
-export {listChatHistory, setChatHistory, initAI};
+export {
+  creatChat,
+  setChat,
+  saveChat,
+  listChat,
+  initAI,
+  genAi,
+  genAiMulti
+};

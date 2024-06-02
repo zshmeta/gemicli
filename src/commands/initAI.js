@@ -2,92 +2,88 @@
 
 import fs from 'fs';
 import path from 'path';
-import readline from 'readline';
-import inquirer from 'inquirer';
 import chalk from 'chalk';
-import {fetchModels
-} from '../utils/api';
+import { fileURLToPath } from 'url';
+import readline from 'readline';
+import { fetchModels } from '../utils/api'; // Ensure this is correctly implemented and imported
 
-// Create a readline interface for user input
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.resolve(__dirname, '../config/.env');
+// if file exists move it to .env.bak
+
+// Function to write a key-value pair to the .env file
+function writeEnv(key, value) {
+    const envContent = `${key}=${value}\n`;
+    fs.appendFileSync(envPath, envContent, { flag: 'a' });
+}
+
+// Create readline interface
 const rl = readline.createInterface({
-	input: process.stdin,
-	output: process.stdout,
+    input: process.stdin,
+    output: process.stdout
 });
 
-const envPath = path.join(__dirname, '../../.env');
-
-// Function to ask a question and return a promise
-function askQuestion(query) {
-	return new Promise(resolve => rl.question(query, resolve));
+async function askQuestion(query) {
+    return new Promise(resolve => rl.question(query, resolve));
 }
 
-// Function to set the configs
 async function initAI() {
-	try {
-		// Print a message to the console
-		console.log(chalk.blue('Initializing gemicli configs...'));
-		console.logs(chalk.blue('First, lets get yor api key'))
-		// Ask the user for their API key
-		const aiOptions = ['gemini'];
-		const ai = inquirer.prompt([
-			{
-				type: 'list',
-				name: 'ai',
-				message: 'Which AI to use?',
-				choices: aiOptions,
-			},
-		])
 
-		const apiKey = inquirer.prompt([
-			{
-				type: 'input',
-				name: 'apiKey',
-				message: 'Enter your API key: ',
-			},
-		]);
-		// use api key to fetch models
-		const models = await fetchModels();
-		// Ask the user which model to use
-		const modelChoice = inquirer.prompt([
-			{
-				type: 'list',
-				name: 'model',
-				message: 'Which model to use?',
-				choices: models,
-			},
-		]);
+    if (fs.existsSync(envPath)) {
+        // ask wether to move the file 
+        const configSave = await askQuestion('Config file already exists. Do you want to move it to .env.bak? (y/n): ');
+        if (configSave.toLowerCase() !== 'y') {
+            console.log('Exiting...');
+            process.exit(0);
+        }
+        fs.renameSync(envPath, `${envPath}.bak`);
 
-		const systemPrompt = inquirer.prompt([
-			// set default is a general instruction to be helpfull and precise
-			{
-				type: 'input',
-				name: 'systemPrompt',
-				message: 'Enter your system prompt: ',
-				default: 'You are a helpful assistant. and you will do your best to any querys with the appropriate format',
-			},
-		]);
+    }
+    
+    try {
+        console.log(chalk.blue('Initializing gemicli configs...'));
 
-		// Wait for all promises to resolve
-		const answers = await Promise.all([ai, apiKey, modelChoice, systemPrompt]);
+        // Ask the user for their AI choice
+        const aiChoices = ['gemini'];
+        const geminiModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro-vision'];
 
-		// Write the configs to a JSON file
-		const configs = {
-			ai: answers[0].ai,
-			apiKey: answers[1].apiKey,
-			model: answers[2].model,
-			systemPrompt: answers[3].systemPrompt,
-		};
-		fs.writeFileSync(envPath, JSON.stringify(configs));
-		console.log(chalk.green('gemicli configs initialized successfully!'));
+        console.log('Which AI to use?');
+        aiChoices.forEach((choice, index) => console.log(`${index + 1}. ${choice}`));
+        const aiChoiceIndex = await askQuestion('Enter number of your choice: ');
+        const ai = aiChoices[parseInt(aiChoiceIndex) - 1];
+        if (!ai) {
+            console.error(chalk.red('Invalid choice'));
+            process.exit(1);
+        }
+        writeEnv('AI', ai);
 
-		} catch (error) {
-		console.error(chalk.red('Error initializing gemicli configs:'), error);
-	}
+        // Ask the user for their API key
+        const apiKey = await askQuestion('Enter your API key: ');
+        writeEnv('GOOGLE_API_KEY', apiKey);
+
+        // Ask the user which model to use
+        console.log('Which model to use?');
+        geminiModels.forEach((choice, index) => console.log(`${index + 1}. ${choice}`));
+        const modelChoiceIndex = await askQuestion('Enter number of your choice: ');
+        const model = geminiModels[parseInt(modelChoiceIndex) - 1];
+        if (!model) {
+            console.error(chalk.red('Invalid choice'));
+            process.exit(1);
+        }
+
+        writeEnv('MODEL', model);
+
+        // Ask for the system prompt
+        const systemPrompt = await askQuestion('Enter your system prompt (default: "You are a helpful assistant. You will do your best to answer any queries with the appropriate format."): ') || 'You are a helpful assistant. You will do your best to answer any queries with the appropriate format.';
+        writeEnv('SYSTEM_PROMPT', `"${systemPrompt}"`);
+
+        console.log(chalk.green('gemicli configs initialized successfully!'));
+    } catch (error) {
+        console.error(chalk.red('Error initializing gemicli configs:'), error);
+    } finally {
+        rl.close();
+    }
 }
 
-
-
-		
-
-
-
+export { initAI }
