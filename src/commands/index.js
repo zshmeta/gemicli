@@ -2,17 +2,17 @@ import { initAI } from './initAI';
 import { genAi } from './genAi';
 import { genAiMulti } from './genAiMulti';
 import {
-  listChat,
+  listChats,
   setChat,
-  creatChat,
+  createChat,
   saveChat,
 } from './manageChat';
 
 export {
-  creatChat,
+  createChat,
   setChat,
   saveChat,
-  listChat,
+  listChats,
   initAI,
   genAi,
   genAiMulti

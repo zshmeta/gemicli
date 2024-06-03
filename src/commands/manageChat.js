@@ -1,6 +1,6 @@
-import setDb from '../utils/setDb'
+// import setDb from '../utils/setDb'
 
-const db = setDb()
+// const db = setDb()
 
 
 function createChat(callback) {

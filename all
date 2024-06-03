@@ -13,7 +13,7 @@
 import ora from 'ora';
 import fs from 'fs';
 import path from 'path';
-import { listChat, setChat, initAI } from './commands/index';
+import { listChats, setChat, initAI } from './commands/index';
 import chalk from 'chalk';
 import cfonts from 'cfonts';
 
@@ -62,7 +62,7 @@ async function gemicli() {
       process.exit();
     },
     '--history-ls': async() => {
-      await listChat();
+      await listChats();
       process.exit();
     },
     '--history-set': async (args) => {
@@ -317,11 +317,11 @@ export {setChat};
 
 
 
-// src/commands/listChat.js
+// src/commands/listChats.js
 import chalk from 'chalk';
 import { fetchChats } from '../utils/api';
 
-async function listChat() {
+async function listChats() {
 	try {
 		const chats = await fetchChats();
 		if (chats.length === 0) {
@@ -336,7 +336,7 @@ async function listChat() {
 	}
 }
 
-export {listChat};
+export {listChats};
 
 
 
@@ -346,12 +346,12 @@ export {listChat};
 
 // src/commands/index.js
 import {setChat} from './setChat.js';
-import {listChat} from './listChat.js';
+import {listChats} from './listChats.js';
 import {initAI} from './initAI.js';
 import {genAi} from './genAi.js';
 
 export {
-    listChat, 
+    listChats, 
     setChat, 
     initAI,
     genAi

@@ -1,7 +1,7 @@
 import ora from 'ora';
 import fs from 'fs';
 import path from 'path';
-import { listChat, setChat, initAI, genAi, createChat } from './commands/index';
+import { listChats, setChat, initAI, genAi, createChat } from './commands/index';
 import chalk from 'chalk';
 import cfonts from 'cfonts';
 
@@ -49,7 +49,7 @@ async function gemicli() {
       process.exit();
     },
     '--ls-chat': async () => {
-      await listChat();
+      await listChats();
       process.exit();
     },
     '--set-chat': async (args) => {
