@@ -9,7 +9,7 @@ import { fetchModels } from '../utils/api'; // Ensure this is correctly implemen
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const envPath = path.resolve(__dirname, '../config/.env');
+const envPath = path.resolve(__dirname, '../data/.env');
 // if file exists move it to .env.bak
 
 // Function to write a key-value pair to the .env file

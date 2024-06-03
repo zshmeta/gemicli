@@ -1,0 +1,562 @@
+
+
+
+src/main.js
+
+
+import ora from 'ora';
+import fs from 'fs';
+import path from 'path';
+import { listChats, setChat, initAI, genAi, createChat } from './commands/index';
+import chalk from 'chalk';
+import cfonts from 'cfonts';
+
+const configPath = path.join(__dirname, './data/.env');
+if (!fs.existsSync(configPath)) {
+  console.log(chalk.red('Environment not set yet. Please run the --init command first.'));
+  process.exit();
+} 
+
+async function gemicli() {
+  const commands = {
+    '--chat': async (args) => {
+      try {
+        await genAi(args.join(' '));
+      } catch (error) {
+        console.error(chalk.red(error.message));
+      } finally {
+        process.exit();
+      }
+    },
+    '--image-embed': async (args) => {
+      const spinner = ora('Processing...').start();
+      try {
+        await genAiMulti(args[0], args.slice(1));
+        spinner.succeed('Done');
+      } catch (error) {
+        spinner.fail('Error');
+        console.error(chalk.red(error.message));
+      } finally {
+        process.exit();
+      }
+    },
+    '--set-model': (args) => {
+      const config = JSON.parse(fs.readFileSync(configPath));
+      config.model = args[0];
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      console.log(chalk.green(`Model set to: ${args[0]}`));
+      process.exit();
+    },
+    '--set-key': (args) => {
+      const config = JSON.parse(fs.readFileSync(configPath));
+      config.apiKey = args[0];
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      console.log(chalk.green('API key set successfully'));
+      process.exit();
+    },
+    '--ls-chat': async () => {
+      await listChats();
+      process.exit();
+    },
+    '--set-chat': async (args) => {
+      const chatHistory = await setChat(args[0]);
+      // Set global or module variable for chat history if necessary
+      global.chatHistory = chatHistory;
+      console.log(chalk.green(`Chat set to ID: ${args[0]}`));
+      process.exit();
+    },
+    '--init': async () => {
+      await initAI();
+      process.exit();
+    },
+    '--new': async () => {
+      const chatId = await createChat();
+      global.chatHistory = [];
+      console.log(chalk.green(`New chat created with ID: ${chatId}`));
+      process.exit();
+    }
+  };
+
+  const args = process.argv.slice(2);
+  const command = args[0];
+
+  if (args.length === 0 || command === '--help' || command === '-h') {
+    cfonts.say('Gemicli', {
+      font: '3d',
+      align: 'center',
+      gradient: ['blue', 'green', 'magenta', 'yellow'],
+      background: 'transparent',
+      space: true,
+      maxLength: '0',
+      transitionGradient: true,
+      env: 'node'
+    });
+    console.log(chalk.cyanBright('--chat <message>                 Chat with the AI using the provided message.'));
+    console.log(chalk.cyanBright('--image-embed <image_path>       Embed an image using the specified path.'));
+    console.log(chalk.cyanBright('--set-model <model_name>         Set the AI model to use.'));
+    console.log(chalk.cyanBright('--set-key <api_key>              Set the API key for authentication.'));
+    console.log(chalk.cyanBright('--ls-chat                        List all chat sessions.'));
+    console.log(chalk.cyanBright('--set-chat <chat_id>             Set the chat session to continue.'));
+    console.log(chalk.cyanBright('--init                           Initialize the AI.'));
+    console.log(chalk.cyanBright('--new                            Start a new chat session.'));
+    process.exit();
+  } else if (commands[command]) {
+    await commands[command](args.slice(1));
+  } else {
+    await commands['--chat'](args);
+  }
+}
+
+export { gemicli };
+
+
+
+src/commands/embedChat.js
+
+
+import  { GoogleGenerativeAI } from "@google/generative-ai"
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({ path: path.resolve(__dirname, '../data/.env') });
+
+const { API_KEY } = process.env;
+
+// Access your API key as an environment variable (see "Set up your API key" above)
+const genAI = new GoogleGenerativeAI(process.env.API_KEY);
+
+async function embedChat( text ) {
+  // For embeddings, use the embedding-001 model
+  const model = genAI.getGenerativeModel({ model: "embedding-001"});
+
+  const vector = text
+
+  const result = await model.embedContent(vector);
+  const embedding = result.embedding;
+  console.log(embedding.values);
+}
+
+export { embedChat };
+
+
+src/commands/manageChat.js
+
+
+// import setDb from '../utils/setDb'
+
+// const db = setDb()
+
+
+function createChat(callback) {
+    db.run(`INSERT INTO chats DEFAULT VALUES`, function(err) {
+      if (err) {
+        console.error(err);
+        callback(null);
+      } else {
+        callback(this.lastID);
+      }
+    });
+  }
+  
+  // Save a chat message
+  function saveChat(chatId, role, text) {
+    const stmt = db.prepare(`INSERT INTO chat_history (chat_id, role, text) VALUES (?, ?, ?)`);
+    stmt.run(chatId, role, text);
+    stmt.finalize();
+  }
+  
+  // Load chat history for a specific chat session
+  function setChat(chatId, callback) {
+    db.all(`SELECT role, text FROM chat_history WHERE chat_id = ?`, [chatId], (err, rows) => {
+      if (err) {
+        console.error(err);
+        callback([]);
+      } else {
+        const history = rows.map(row => ({
+          role: row.role,
+          parts: [{ text: row.text }]
+        }));
+        callback(history);
+      }
+    });
+  }
+  
+  // List all chat sessions
+  function listChats(callback) {
+    db.all(`SELECT id, created_at FROM chats`, (err, rows) => {
+      if (err) {
+        console.error(err);
+        callback([]);
+      } else {
+        callback(rows);
+      }
+    });
+  }
+  
+
+  export { createChat, saveChat, setChat, listChats };
+
+
+src/commands/initAI.js
+
+
+#!/usr/bin/env node
+
+import fs from 'fs';
+import path from 'path';
+import chalk from 'chalk';
+import { fileURLToPath } from 'url';
+import readline from 'readline';
+import { fetchModels } from '../utils/api'; // Ensure this is correctly implemented and imported
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.resolve(__dirname, '../data/.env');
+// if file exists move it to .env.bak
+
+// Function to write a key-value pair to the .env file
+function writeEnv(key, value) {
+    const envContent = `${key}=${value}\n`;
+    fs.appendFileSync(envPath, envContent, { flag: 'a' });
+}
+
+// Create readline interface
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+async function askQuestion(query) {
+    return new Promise(resolve => rl.question(query, resolve));
+}
+
+async function initAI() {
+
+    if (fs.existsSync(envPath)) {
+        // ask wether to move the file 
+        const configSave = await askQuestion('Config file already exists. Do you want to move it to .env.bak? (y/n): ');
+        if (configSave.toLowerCase() !== 'y') {
+            console.log('Exiting...');
+            process.exit(0);
+        }
+        fs.renameSync(envPath, `${envPath}.bak`);
+
+    }
+    
+    try {
+        console.log(chalk.blue('Initializing gemicli configs...'));
+
+        // Ask the user for their AI choice
+        const aiChoices = ['gemini'];
+        const geminiModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro-vision'];
+
+        console.log('Which AI to use?');
+        aiChoices.forEach((choice, index) => console.log(`${index + 1}. ${choice}`));
+        const aiChoiceIndex = await askQuestion('Enter number of your choice: ');
+        const ai = aiChoices[parseInt(aiChoiceIndex) - 1];
+        if (!ai) {
+            console.error(chalk.red('Invalid choice'));
+            process.exit(1);
+        }
+        writeEnv('AI', ai);
+
+        // Ask the user for their API key
+        const apiKey = await askQuestion('Enter your API key: ');
+        writeEnv('GOOGLE_API_KEY', apiKey);
+
+        // Ask the user which model to use
+        console.log('Which model to use?');
+        geminiModels.forEach((choice, index) => console.log(`${index + 1}. ${choice}`));
+        const modelChoiceIndex = await askQuestion('Enter number of your choice: ');
+        const model = geminiModels[parseInt(modelChoiceIndex) - 1];
+        if (!model) {
+            console.error(chalk.red('Invalid choice'));
+            process.exit(1);
+        }
+
+        writeEnv('MODEL', model);
+
+        // Ask for the system prompt
+        const systemPrompt = await askQuestion('Enter your system prompt (default: "You are a helpful assistant. You will do your best to answer any queries with the appropriate format."): ') || 'You are a helpful assistant. You will do your best to answer any queries with the appropriate format.';
+        writeEnv('SYSTEM_PROMPT', `"${systemPrompt}"`);
+
+        console.log(chalk.green('gemicli configs initialized successfully!'));
+    } catch (error) {
+        console.error(chalk.red('Error initializing gemicli configs:'), error);
+    } finally {
+        rl.close();
+    }
+}
+
+export { initAI }
+
+
+
+src/commands/genAiMulti.js
+
+
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import fs from 'fs';
+import { genAI, model } from '../utils/config';
+
+function fileToGenerativePart(path, mimeType) {
+  return {
+    inlineData: {
+      data: Buffer.from(fs.readFileSync(path)).toString("base64"),
+      mimeType
+    },
+  };
+}
+
+async function genAiMulti(prompt, imagePaths) {
+  const genModel = genAI.generateContent(model());
+  const imageParts = imagePaths.map(path => fileToGenerativePart(path, 'image/jpeg'));
+
+  const result = await genModel.generateContent([prompt, ...imageParts]);
+  const response = await result.response;
+  const text = response.text();
+  console.log(text);
+}
+
+export { genAiMulti };
+
+
+
+src/commands/genAi.js
+
+
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import dotenv from 'dotenv';
+import path from 'path';
+import ora from 'ora';
+import { embedChat } from './embedChat';
+import { saveChat, setChat, createChat } from './manageChat';
+
+import chalk from 'chalk';
+
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(__dirname, '../data/.env') });
+
+const { API_KEY, model, SYSTEM_PROMPT } = process.env;
+
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+async function genAi(prompt) {
+  try {
+    const genModel = genAI.getGenerativeModel({ model });
+
+    const chat = genModel.startChat({
+      history: chatHistory
+    });
+
+    const type =(ms) =>{
+      return new Promise(resolve => setTimeout(resolve, ms))
+    }
+
+    const spinner = ora('Processing...').start();
+    const result = await chat.sendMessage([prompt]);
+    const response = await result.response;
+    const text = await response.text();
+    spinner.stop();
+
+    chatHistory.push({
+      role: 'user',
+      parts: [{ text: prompt }]
+    });
+    chatHistory.push({
+      role: 'model',
+      parts: [{ text }]
+    });
+
+    const userEmbeddings = await embedChat(prompt);
+    const modelEmbeddings = await embedChat(text);
+
+    const stream = async (text) => {
+      for (const chunk of text) {
+        process.stdout.write(chalk.green(chunk));
+        await type(13);
+      }
+      process.stdout.write('\n');
+    };
+    
+    console.log("");
+    console.log("");
+    console.log(chalk.cyan.bold('Gemini '))
+    console.log(chalk.yellow.bold("================================================================================"))
+    console.log("")
+    await stream(text);
+    console.log("")
+    console.log(chalk.yellow.bold("================================================================================"))
+  } catch (error) {
+    console.error('Error:', error.message);
+  }
+}
+
+export { genAi };
+
+
+
+src/commands/index.js
+
+
+import { initAI } from './initAI';
+import { genAi } from './genAi';
+import { genAiMulti } from './genAiMulti';
+import {
+  listChats,
+  setChat,
+  createChat,
+  saveChat,
+} from './manageChat';
+
+export {
+  createChat,
+  setChat,
+  saveChat,
+  listChats,
+  initAI,
+  genAi,
+  genAiMulti
+};
+
+
+
+src/utils/config.js
+
+
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv";
+import path from "path";
+
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(__dirname, '../data/.env') });
+
+const genAI = new GoogleGenerativeAI({
+  apiKey: process.env.API_KEY,
+});
+
+const model = () => ({
+  model: process.env.MODEL,
+});
+
+export { model, genAI };
+
+
+
+src/utils/setDb.js
+
+
+import sqlite3 from 'sqlite3';
+import fs from 'fs';
+import path from 'path';
+
+// Path to the database file
+const dbPath = path.join(__dirname, './data/chatHistory.db');
+
+// Check if the database file exists, if not, create it
+if (!fs.existsSync(dbPath)) {
+  fs.writeFileSync(dbPath, '');
+}
+
+// Initialize the database connection
+const db = new sqlite3.Database(dbPath);
+
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS chats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS chat_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_id INTEGER,
+    role TEXT,
+    text TEXT,
+    FOREIGN KEY (chat_id) REFERENCES chats(id)
+  )`);
+});
+
+export { db };
+
+
+
+src/utils/textStreaming.js
+
+
+import React, { useEffect, useState } from 'react';
+import { Text } from 'ink';
+import chalk from 'chalk';
+
+const TextStreaming = ({ text }) => {
+  const [displayedText, setDisplayedText] = useState('');
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (index < text.length) {
+      const timeoutId = setTimeout(() => {
+        setDisplayedText((prev) => prev + text[index]);
+        setIndex(index + 1);
+      }, 50); // Adjust the delay as needed
+      return () => clearTimeout(timeoutId);
+    }
+  }, [index, text]);
+
+  return <Text color="limegreen">{displayedText}</Text>;
+};
+
+export { TextStreaming };
+
+
+
+src/utils/logger.js
+
+
+
+
+
+src/utils/api.js
+
+
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+
+// Load API key from environment file
+const envPath = path.join(__dirname, '../data/.env');
+if (fs.existsSync(envPath)) {
+	const envContent = fs.readFileSync(envPath);
+	const envVars = envContent.toString().split('\n');
+	envVars.forEach(varLine => {
+		const [key, value] = varLine.split('=');
+		process.env[key] = value;
+	});
+}
+
+const apiClient = axios.create({
+	baseURL: 'https://generativelanguage.googleapis.com/v1beta',
+	headers: {
+		'Authorization': `Bearer ${process.env.API_KEY}`,
+	},
+});
+
+async function fetchModels() {
+	try {
+		const response = await apiClient.get('/models');
+		return response.data.models.map(model => model.name);
+	} catch (error) {
+		console.error('Error fetching models:', error);
+		throw error;
+	}
+}
+
+async function fetchChats() {
+	try {
+		const response = await apiClient.get('/chats');
+		return response.data.chats;
+	} catch (error) {
+		console.error('Error fetching previous chats:', error);
+		throw error;
+	}
+}
+
+export { fetchModels, fetchChats }

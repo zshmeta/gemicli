@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 // Load environment variables from .env file
-dotenv.config({ path: path.resolve(__dirname, '../config/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../data/.env') });
 
 const genAI = new GoogleGenerativeAI({
   apiKey: process.env.API_KEY,

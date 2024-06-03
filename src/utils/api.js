@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 // Load API key from environment file
-const envPath = path.join(__dirname, '../config/.env');
+const envPath = path.join(__dirname, '../data/.env');
 if (fs.existsSync(envPath)) {
 	const envContent = fs.readFileSync(envPath);
 	const envVars = envContent.toString().split('\n');

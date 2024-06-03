@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load environment variables from .env file
-dotenv.config({ path: path.resolve(__dirname, '../src/config/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../src/data/.env') });
 
 const apiKey = process.env.API_KEY;
 console.log('API Key:', apiKey); // Log the API key for debugging

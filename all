@@ -1,7 +1,7 @@
 
 
 
-// src/config/default.json
+// src/data/default.json
 
 
 
@@ -17,7 +17,7 @@ import { listChats, setChat, initAI } from './commands/index';
 import chalk from 'chalk';
 import cfonts from 'cfonts';
 
-const configPath = path.join(__dirname, 'config/default.json');
+const configPath = path.join(__dirname, 'data/default.json');
 
 async function gemicli() {
   // Styles
@@ -216,7 +216,7 @@ import { fetchModels } from '../utils/api'; // Ensure this is correctly implemen
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const envPath = path.resolve(__dirname, '../config/.env');
+const envPath = path.resolve(__dirname, '../data/.env');
 // if file exists move it to .env.bak
 if (fs.existsSync(envPath)) {
     fs.renameSync(envPath, `${envPath}.bak`);
@@ -370,7 +370,7 @@ import fs from "fs";
 
 // Acccess api key from the env file
 
-const envPath = path.join(__dirname, '../config/.env');
+const envPath = path.join(__dirname, '../data/.env');
 if (fs.existsSync(envPath)) {
 	const envContent = fs.readFileSync(envPath);
 	const envVars = envContent.toString().split('\n');
@@ -409,7 +409,7 @@ import fs from 'fs';
 import path from 'path';
 
 // Load API key from environment file
-const envPath = path.join(__dirname, '../config/.env');
+const envPath = path.join(__dirname, '../data/.env');
 if (fs.existsSync(envPath)) {
 	const envContent = fs.readFileSync(envPath);
 	const envVars = envContent.toString().split('\n');

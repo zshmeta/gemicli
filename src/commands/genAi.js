@@ -3,12 +3,11 @@ import dotenv from 'dotenv';
 import path from 'path';
 import ora from 'ora';
 import { embedChat } from './embedChat';
-import { saveChat, setChat, createChat } from './manageChat';
-
+import { saveChat } from './manageChat';
 import chalk from 'chalk';
 
 // Load environment variables from .env file
-dotenv.config({ path: path.resolve(__dirname, '../config/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../data/.env') });
 
 const { API_KEY, model, SYSTEM_PROMPT } = process.env;
 
@@ -19,11 +18,11 @@ async function genAi(prompt) {
     const genModel = genAI.getGenerativeModel({ model });
 
     const chat = genModel.startChat({
-      history: chatHistory
+      history: global.chatHistory
     });
 
-    const type =(ms) =>{
-      return new Promise(resolve => setTimeout(resolve, ms))
+    const type = (ms) => {
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     const spinner = ora('Processing...').start();
@@ -32,17 +31,17 @@ async function genAi(prompt) {
     const text = await response.text();
     spinner.stop();
 
-    chatHistory.push({
+    global.chatHistory.push({
       role: 'user',
       parts: [{ text: prompt }]
     });
-    chatHistory.push({
+    global.chatHistory.push({
       role: 'model',
       parts: [{ text }]
     });
 
-    const userEmbeddings = await embedChat(prompt);
-    const modelEmbeddings = await embedChat(text);
+    await saveChat(process.env.CHATID, 'user', prompt);
+    await saveChat(process.env.CHATID, 'model', text);
 
     const stream = async (text) => {
       for (const chunk of text) {

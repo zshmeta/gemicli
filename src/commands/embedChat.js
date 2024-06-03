@@ -2,7 +2,7 @@ import  { GoogleGenerativeAI } from "@google/generative-ai"
 import dotenv from "dotenv";
 import path from "path";
 
-dotenv.config({ path: path.resolve(__dirname, '../config/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../data/.env') });
 
 const { API_KEY } = process.env;
 
