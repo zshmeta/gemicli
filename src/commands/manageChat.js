@@ -1,97 +1,93 @@
-import { readData, writeData, setData, formatDate } from '../utils/data';
+import fs from 'fs';
+import { readData, setData, formatDate, envPath, dataPath } from '../utils/data';
 import { embedChat } from './embedChat';
-// Default chat history for new chats
-const defaultHistory = [
-  {
-    role: "user", // Role of the sender
-    parts: [{ text: "Hi, I am on my $(uname -o) terminal and I have a few requests" }], // Text of the message
-  },
-  {
-    role: "model", // Role of the sender
-    parts: [{ text: "Always ready to help, I will make sure to provide the best possible answer" }], // Text of the message
-  },
-];
 
-// Create a new chat session
-async function createChat(initialMessage) {
-  // Read the existing chat data from the database
-  const data = readData();
-
-  // Create a new chat object
-  const newChat = {
-    id: data.length ? data[data.length - 1].id + 1 : 1, // Assign a unique ID to the chat
-    created_at: new Date().toISOString(), // Set the creation date
-    history: [...defaultHistory], // Initialize the chat history with the default messages
-  };
-
-  // If an initial message is provided, save it to the chat history
-  if (initialMessage) {
-    await saveChat(newChat.id, 'user', initialMessage);
-  }
-
-  // Add the new chat to the database
-  data.push(newChat);
-  writeData(data);
-
-  // Update the environment variable to set the current chat ID
-  setData('CHATID', newChat.id);
-
-  // Return the ID of the newly created chat
-  return newChat.id;
+// const to = swrite data to => the JSON file
+const writeChat =(data) => {
+  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 }
 
+
+// Default starter
+const defaultHistory = () => { 
+  const sysPrompt = process.env.SYSTEM_PROMPT; // Access SYSTEM_PROMPT from environment variables
+  return (
+    [
+      {
+        role: "system", 
+        parts: [{ text: sysPrompt ? sysPrompt : "You are a helpful assistant named gemini. You will do your best to answer any queries with the appropriate format. here is our conversation so far:" }], 
+      },
+      {
+        role: "me", 
+        parts: [{ text: "Hi, I am on my console terminal and I have a few requests" }], 
+      },
+      {
+        role: "gemini", 
+        parts: [{ text: "Ready to help the best i can" }], 
+      },
+    ]
+  );
+};
+
+
+
+// Create a new chat session
+async function createChat (initialMessage) {
+  const data = readData();
+  // Create a new chat object
+  const newChat = {
+    id: data.length ? data[data.length - 1].id + 1 : 1, 
+    created_at: new Date().toISOString(), 
+    chat: [...defaultHistory()], 
+  };
+
+  if (initialMessage) {
+    await saveChat(newChat.id, 'user', initialMessage);
+    global.chatHistory = newChat.chat;
+  } else {
+    global.chatHistory = newChat.chat;
+  }
+
+  data.push(newChat);
+  writeChat(data);
+  setChat(newChat.id);
+  return newChat.id;
+}
 // Save a message to a chat session
 async function saveChat(chatId, role, text) {
-  // Read the existing chat data from the database
   const data = readData();
-
-  // Find the chat with the specified ID
   const chat = data.find(c => c.id === chatId);
-
-  // If the chat exists, add the new message to the history
+  // we embed it first
   if (chat) {
-    // Generate an embedding for the message text
     const embedding = await embedChat(text);
-
-    // Add the message to the chat history
-    chat.history.push({ role, parts: [{ text, embedding }] });
-
-    // Write the updated chat data to the database
-    writeData(data);
+    chat.chat.push({ role, parts: [{ text, embedding }] });
+    writeChat(data);
   }
   return chat;
 }
 
-  // Set the current chat session
-function setChat(chatId) {
-  // Read the existing chat data from the database
-  const data = readData();
-
-  // Find the chat with the specified ID
-  const chat = data.find(c => c.id === chatId);
-
-  // If the chat exists, update the environment variable to set the current chat ID and return the chat history
-  if (chat) {
-    setData('CHATID', chatId);
-    return chat.history;
-  }
-
-  // Otherwise, return null
-  return null;
+ // write the current Chat ID in the env file
+const setChat =(chatId) => {
+  let envChatID = fs.readFileSync(envPath, 'utf-8');
+  envChatID = envChatID.replace(/CHATID=.*$/, `CHATID=${chatId}`);
+  fs.writeFileSync(envPath, envChatID);
 }
 
 // List all chat sessions
-function listChats() {
-  // Read the existing chat data from the database
+const listChats =() => {
   const data = readData();
-
-  // Map the chat data into a list of chat summaries
   return data.map(chat => ({
     id: chat.id, // Chat ID
     created_at: formatDate(chat.created_at), // Chat creation date
-    latest_message: chat.history.length ? chat.history[chat.history.length - 1].parts[0].text : '', // Text of the latest message in the chat
+    latest_user_message: chat.history.length > 1 ? chat.history[chat.history.length - 2].parts[0].text : '',
+    latest_model_message: chat.history.length ? chat.history[chat.history.length - 1].parts[0].text : '',
+    latest_author: chat.history.length ? chat.history[chat.history.length - 1].role : '',
   }));
 }
 
+const readChat = (chatId) => {
+  const chat = setData(chatId);
+  return chat;
+}
 
-export { createChat, saveChat, setChat, listChats };
+export { createChat, saveChat, readChat, setChat, listChats };

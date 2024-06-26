@@ -1,64 +1,72 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import path from 'path';
-import ora from 'ora';
+import spinnit from 'spinnit';
 import { embedChat } from './embedChat';
 import { saveChat } from './manageChat';
 import chalk from 'chalk';
+import { readData, setData } from '../utils/data';
 
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(__dirname, '../data/.env') });
 
-const { API_KEY, model, SYSTEM_PROMPT } = process.env;
 
+
+const { API_KEY, model, CHATID } = process.env;
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 async function genAi(prompt) {
   try {
-    const genModel = genAI.getGenerativeModel({ model });
 
+    await saveChat(process.env.CHATID, 'user', prompt);
+    // console.log(prompt);
+    // console.log(CHATID)
+    // const history = setData(CHATID)
+    // console.log(history);
+
+    //const embedHistory = await embedChat(history);
+
+    const genModel = genAI.getGenerativeModel({ model });
+    const equationSpinner = spinnit({ spinner: 'equation', speed: 200 });
+    equationSpinner.start();
+
+    // Embed and save the user's prompt
     const chat = genModel.startChat({
-      history: global.chatHistory
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
     });
 
-    const type = (ms) => {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
 
-    const spinner = ora('Processing...').start();
+    // Generate response from AI
     const result = await chat.sendMessage([prompt]);
     const response = await result.response;
     const text = await response.text();
-    spinner.stop();
 
-    global.chatHistory.push({
-      role: 'user',
-      parts: [{ text: prompt }]
-    });
-    global.chatHistory.push({
-      role: 'model',
-      parts: [{ text }]
-    });
-
-    await saveChat(process.env.CHATID, 'user', prompt);
+    // save the AI's response
     await saveChat(process.env.CHATID, 'model', text);
+
+    equationSpinner.stop();
 
     const stream = async (text) => {
       for (const chunk of text) {
         process.stdout.write(chalk.green(chunk));
-        await type(13);
+        await new Promise(resolve => setTimeout(resolve, 13));
       }
       process.stdout.write('\n');
     };
     
     console.log("");
-    console.log("");
-    console.log(chalk.cyan.bold('Gemini '))
-    console.log(chalk.yellow.bold("================================================================================"))
-    console.log("")
+    console.log(chalk.cyan.bold('Gemini '));
+    console.log(chalk.yellow.bold("================================================================================"));
     await stream(text);
-    console.log("")
-    console.log(chalk.yellow.bold("================================================================================"))
+    console.log(chalk.yellow.bold("================================================================================"));
+
+    equationSpinner.stop(true);
+
   } catch (error) {
     console.error('Error:', error.message);
   }
