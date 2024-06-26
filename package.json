@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "license": "MIT",
   "type": "module",
-  "bin": "./bin/gemicli.js",
+  "bin": {
+    "gemicli": "./bin/gemicli.js"
+  },
   "scripts": {
     "run": "bun index.js",
     "test": "prettier --check . && xo && ava"
