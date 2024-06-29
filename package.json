@@ -6,7 +6,7 @@
   "bin": {
     "gemicli": "./bin/gemicli.js"
   },
-  "main": 
+  "main": "src/main.js",
   "scripts": {
     "run": "bun index.js",
     "test": "prettier --check . && xo && ava"
