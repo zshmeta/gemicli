@@ -5,7 +5,7 @@ import path from 'path';
 import chalk from 'chalk';
 import { fileURLToPath } from 'url';
 import readline from 'readline';
-import { fetchModels } from '../utils/api'; // Ensure this is correctly implemented and imported
+import { fetchModels } from '../utils/api.js'; // Ensure this is correctly implemented and imported
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

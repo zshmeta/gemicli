@@ -1,3 +1,3 @@
-import { gemicli } from './src/main'
+import { gemicli } from './src/main.js';
 
 gemicli()

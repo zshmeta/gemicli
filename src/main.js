@@ -1,13 +1,13 @@
-import { createChat, saveChat, setChat, listChats } from './commands/manageChat';
-import { setData } from './utils/data';
-import { genAi } from './commands/genAi';
+import { createChat, saveChat, setChat, listChats } from './commands/manageChat.js';
+import { setData } from './utils/data.js';
+import { genAi } from './commands/genAi.js';
 import chalk from 'chalk';
 import cfonts from 'cfonts'
 import ora from 'ora';
 import fs from 'fs';
 import path from 'path';
-import { genAiMulti } from './commands/genAiMulti';
-import { initAI } from './commands/initAI';
+import { genAiMulti } from './commands/genAiMulti.js';
+import { initAI } from './commands/initAI.js';
 // Path to the environment configuration file
 const configPath = path.join(__dirname, './data/.env');
 const dataPath = path.join(__dirname, './data/chats.json');

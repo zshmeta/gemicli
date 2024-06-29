@@ -1,12 +1,12 @@
-import { initAI } from './initAI';
-import { genAi } from './genAi';
-import { genAiMulti } from './genAiMulti';
+import { initAI } from './initAI.js';
+import { genAi } from './genAi.js';
+import { genAiMulti } from './genAiMulti.js';
 import {
   listChats,
   setChat,
   createChat,
   saveChat,
-} from './manageChat';
+} from './manageChat.js';
 
 export {
   createChat,

@@ -1,6 +1,6 @@
 import fs from 'fs';
-import { readData, setData, formatDate, envPath, dataPath } from '../utils/data';
-import { embedChat } from './embedChat';
+import { readData, setData, formatDate, envPath, dataPath } from '../utils/data.js';
+import { embedChat } from './embedChat.js';
 
 // const to = swrite data to => the JSON file
 const writeChat =(data) => {

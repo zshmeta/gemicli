@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
-import { genAI, model } from '../utils/config';
+import { genAI, model } from '../utils/config.js';
 
 function fileToGenerativePart(path, mimeType) {
   return {

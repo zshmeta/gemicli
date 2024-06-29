@@ -10,9 +10,6 @@
     "run": "bun index.js",
     "test": "prettier --check . && xo && ava"
   },
-  "files": [
-    "dist"
-  ],
   "dependencies": {
     "@google/generative-ai": "^0.12.0",
     "axios": "^1.7.2",

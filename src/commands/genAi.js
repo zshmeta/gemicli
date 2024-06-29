@@ -2,10 +2,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import path from 'path';
 import spinnit from 'spinnit';
-import { embedChat } from './embedChat';
-import { saveChat } from './manageChat';
+import { embedChat } from './embedChat.js';
+import { saveChat } from './manageChat.js';
 import chalk from 'chalk';
-import { readData, setData } from '../utils/data';
+import { readData, setData } from '../utils/data.js';
 
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(__dirname, '../data/.env') });
